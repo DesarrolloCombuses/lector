@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>LECTOR QR - Aeropuerto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Lector QR - Aeropuerto</title>
     <style>
         * {
             margin: 0;
@@ -12,57 +12,61 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: #000;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-        }
-
-        .container {
-            max-width: 500px;
-            width: 100%;
-            background: #1a1a1a;
-            border-radius: 20px;
+            height: 100vh;
             overflow: hidden;
+            touch-action: manipulation;
         }
 
+        /* Contenedor principal - OCUPA TODA LA PANTALLA */
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+            position: relative;
+        }
+
+        /* Header con gradiente */
         .header {
             background: linear-gradient(135deg, #1e3c72, #2a5298);
             color: white;
-            padding: 20px;
+            padding: 20px 15px 15px;
             text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 10;
         }
 
         .header h1 {
-            font-size: 1.5em;
+            font-size: 1.4em;
             margin-bottom: 5px;
+            font-weight: 600;
         }
 
         .header p {
+            font-size: 0.85em;
             opacity: 0.9;
-            font-size: 0.9em;
         }
 
-        .camera-container {
-            background: #000;
+        /* Zona de cámara - TODO EL ESPACIO CENTRAL */
+        .camera-section {
+            flex: 1;
             position: relative;
-            min-height: 400px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background: #000;
             overflow: hidden;
         }
 
         #camera {
             width: 100%;
-            height: auto;
-            min-height: 400px;
+            height: 100%;
             object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
 
+        /* Overlay de escaneo - MÁS PROFESIONAL */
         .scan-overlay {
             position: absolute;
             top: 0;
@@ -70,88 +74,308 @@
             right: 0;
             bottom: 0;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            pointer-events: none;
+            z-index: 20;
+        }
+
+        .scan-frame-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
         }
 
         .scan-frame {
-            width: 250px;
-            height: 250px;
-            border: 3px solid #00ff00;
-            border-radius: 20px;
+            width: 100%;
+            height: 100%;
+            border: 3px solid rgba(0, 255, 0, 0.8);
+            border-radius: 30px;
             box-shadow: 0 0 0 999px rgba(0,0,0,0.7);
-            animation: pulse 2s infinite;
+            animation: framePulse 2s infinite;
+        }
+
+        .scan-corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-color: #00ff00;
+            border-style: solid;
+            border-width: 0;
+        }
+
+        .corner-tl {
+            top: -2px;
+            left: -2px;
+            border-top-width: 4px;
+            border-left-width: 4px;
+            border-radius: 20px 0 0 0;
+        }
+
+        .corner-tr {
+            top: -2px;
+            right: -2px;
+            border-top-width: 4px;
+            border-right-width: 4px;
+            border-radius: 0 20px 0 0;
+        }
+
+        .corner-bl {
+            bottom: -2px;
+            left: -2px;
+            border-bottom-width: 4px;
+            border-left-width: 4px;
+            border-radius: 0 0 0 20px;
+        }
+
+        .corner-br {
+            bottom: -2px;
+            right: -2px;
+            border-bottom-width: 4px;
+            border-right-width: 4px;
+            border-radius: 0 0 20px 0;
         }
 
         .scan-line {
             position: absolute;
-            width: 250px;
-            height: 2px;
-            background: #00ff00;
-            animation: scan 2s linear infinite;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #00ff00, transparent);
+            animation: scanMove 2s linear infinite;
+            filter: drop-shadow(0 0 10px #00ff00);
         }
 
-        @keyframes scan {
-            0% { top: calc(50% - 125px); }
-            50% { top: calc(50% + 125px); }
-            100% { top: calc(50% - 125px); }
+        @keyframes scanMove {
+            0% { top: 0; }
+            50% { top: calc(100% - 3px); }
+            100% { top: 0; }
         }
 
-        @keyframes pulse {
-            0% { border-color: #00ff00; }
-            50% { border-color: #ff4444; }
-            100% { border-color: #00ff00; }
+        @keyframes framePulse {
+            0% { border-color: rgba(0, 255, 0, 0.8); }
+            50% { border-color: rgba(255, 68, 68, 0.8); }
+            100% { border-color: rgba(0, 255, 0, 0.8); }
         }
 
-        .controls {
-            background: white;
-            padding: 20px;
-        }
-
-        .button-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .button {
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1em;
-            font-weight: bold;
-            cursor: pointer;
+        .scan-hint {
+            margin-top: 20px;
             color: white;
-        }
-
-        .button.primary { background: #1e3c72; }
-        .button.success { background: #28a745; }
-        .button.danger { background: #dc3545; }
-        .button.warning { background: #ffc107; color: #333; }
-        .button:disabled { opacity: 0.5; }
-
-        .result {
-            margin-top: 15px;
-            padding: 15px;
-            border-radius: 10px;
-            font-weight: bold;
             text-align: center;
-            min-height: 60px;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            font-size: 1em;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 20px;
+            border-radius: 50px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
-        .success { background: #d4edda; color: #155724; border: 2px solid #28a745; }
-        .error { background: #f8d7da; color: #721c24; border: 2px solid #dc3545; }
-        .info { background: #d1ecf1; color: #0c5460; border: 2px solid #17a2b8; }
+        /* Botones flotantes - MODERNOS */
+        .floating-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            z-index: 30;
+            padding: 0 20px;
+        }
 
+        .floating-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: #1e3c72;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 3px solid rgba(255,255,255,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .floating-btn:active {
+            transform: scale(0.9);
+        }
+
+        .floating-btn span {
+            font-size: 1.8em;
+            margin-bottom: 2px;
+        }
+
+        .floating-btn.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .floating-btn.capture {
+            width: 80px;
+            height: 80px;
+            background: #28a745;
+            color: white;
+            border-color: rgba(255,255,255,0.8);
+        }
+
+        /* Hora actual flotante */
+        .time-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.6);
+            color: #00ff00;
+            padding: 8px 15px;
+            border-radius: 50px;
+            font-family: monospace;
+            font-size: 1.1em;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+            z-index: 25;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        /* MODAL DE RESULTADO - MODERNO Y BONITO */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 30px;
+            padding: 30px;
+            max-width: 350px;
+            width: 90%;
+            text-align: center;
+            animation: slideUp 0.3s;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+        }
+
+        .modal-icon {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 3em;
+        }
+
+        .modal-icon.success {
+            background: #d4edda;
+            color: #28a745;
+            border: 4px solid #28a745;
+        }
+
+        .modal-icon.error {
+            background: #f8d7da;
+            color: #dc3545;
+            border: 4px solid #dc3545;
+        }
+
+        .modal-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .modal-title.success {
+            color: #28a745;
+        }
+
+        .modal-title.error {
+            color: #dc3545;
+        }
+
+        .modal-id {
+            font-size: 3em;
+            font-weight: bold;
+            color: #1e3c72;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            font-family: monospace;
+        }
+
+        .modal-time {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        .modal-button {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.2em;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-button:active {
+            transform: scale(0.95);
+        }
+
+        .modal-button.success {
+            background: linear-gradient(135deg, #28a745, #218838);
+        }
+
+        .modal-button.error {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Permiso de cámara */
         .permission-box {
-            background: #333;
+            background: rgba(0,0,0,0.8);
             color: white;
             padding: 30px;
             text-align: center;
-            border-radius: 10px;
+            border-radius: 20px;
             margin: 20px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 350px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.1);
         }
 
         .permission-box button {
@@ -161,97 +385,154 @@
             padding: 15px 30px;
             border-radius: 50px;
             font-size: 1.2em;
-            margin-top: 15px;
+            margin-top: 20px;
             width: 100%;
+            font-weight: bold;
         }
 
-        .history {
-            background: white;
-            padding: 15px;
+        /* Historial compacto */
+        .history-bar {
+            background: rgba(255,255,255,0.95);
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow-x: auto;
+            white-space: nowrap;
             border-top: 1px solid #eee;
-        }
-
-        .history h3 {
-            color: #333;
-            margin-bottom: 10px;
+            z-index: 10;
         }
 
         .history-item {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #f0f0f0;
+            padding: 5px 12px;
+            border-radius: 50px;
+            font-size: 0.85em;
         }
 
-        .history-id { font-weight: bold; color: #1e3c72; }
-        .history-time { color: #666; font-size: 0.85em; }
-        .history-status { padding: 2px 10px; border-radius: 15px; font-size: 0.8em; }
-        .status-success { background: #28a745; color: white; }
-        .status-error { background: #dc3545; color: white; }
+        .history-item.success {
+            background: #d4edda;
+            color: #155724;
+        }
 
-        .hora-actual {
-            text-align: center;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            margin-bottom: 10px;
+        .history-item.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .history-time {
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+
+        /* Loading */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
             font-size: 1.2em;
-            font-family: monospace;
+            z-index: 15;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body>
-    <div class="container">
+    <div class="app-container">
+        <!-- Header -->
         <div class="header">
             <h1>📱 LECTOR QR AEROPUERTO</h1>
-            <p>Tolerancia: 10 segundos - Anti-foto</p>
+            <p>Toca el botón verde para escanear</p>
         </div>
 
-        <div class="camera-container">
-            <video id="camera" playsinline autoplay muted></video>
+        <!-- Zona de cámara -->
+        <div class="camera-section">
+            <video id="camera" playsinline muted></video>
+            
+            <!-- Hora actual flotante -->
+            <div class="time-badge" id="timeBadge">--:--:--</div>
+            
+            <!-- Overlay de escaneo -->
             <div class="scan-overlay" id="scanOverlay">
-                <div class="scan-frame"></div>
-                <div class="scan-line"></div>
+                <div class="scan-frame-container">
+                    <div class="scan-frame"></div>
+                    <div class="scan-corner corner-tl"></div>
+                    <div class="scan-corner corner-tr"></div>
+                    <div class="scan-corner corner-bl"></div>
+                    <div class="scan-corner corner-br"></div>
+                    <div class="scan-line"></div>
+                </div>
+                <div class="scan-hint">
+                    Enfoca el código QR
+                </div>
             </div>
-            <div id="permissionRequest" class="permission-box">
-                <p>📸 Necesitamos acceso a la cámara</p>
+
+            <!-- Loading -->
+            <div class="loading" id="loading" style="display: none;">
+                ⏳ Procesando...
+            </div>
+
+            <!-- Permiso de cámara -->
+            <div class="permission-box" id="permissionRequest">
+                <span style="font-size: 3em;">📸</span>
+                <p style="margin: 20px 0;">Necesitamos acceso a la cámara trasera</p>
                 <button onclick="requestCamera()">PERMITIR CÁMARA</button>
             </div>
         </div>
 
-        <div class="controls">
-            <div class="hora-actual" id="horaActual">
-                🕐 Cargando hora...
-            </div>
-            
-            <div class="button-grid">
-                <button class="button success" onclick="captureQR()" id="btnCapture" disabled>📸 CAPTURAR</button>
-                <button class="button warning" onclick="toggleTorch()" id="btnTorch" disabled>🔦 LINERNA</button>
-            </div>
-            
-            <div id="result" class="result"></div>
+        <!-- Botones flotantes -->
+        <div class="floating-controls">
+            <button class="floating-btn" onclick="toggleTorch()" id="btnTorch" disabled>
+                <span>🔦</span>
+                Linterna
+            </button>
+            <button class="floating-btn capture" onclick="captureQR()" id="btnCapture" disabled>
+                <span>📸</span>
+                Escanear
+            </button>
+            <button class="floating-btn" onclick="stopCamera()" id="btnStop" disabled>
+                <span>⏹️</span>
+                Detener
+            </button>
         </div>
 
-        <div class="history" id="history">
-            <h3>📋 ÚLTIMOS ACCESOS</h3>
-            <div id="historyList"></div>
+        <!-- Historial rápido -->
+        <div class="history-bar" id="historyBar">
+            <span style="color: #666;">📋 Últimos:</span>
+            <span id="historyItems">No hay accesos</span>
+        </div>
+    </div>
+
+    <!-- MODAL DE RESULTADO -->
+    <div class="modal-overlay" id="resultModal" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div id="modalIcon" class="modal-icon success">✅</div>
+            <div id="modalTitle" class="modal-title success">¡ACCESO CONCEDIDO!</div>
+            <div id="modalId" class="modal-id">3384</div>
+            <div id="modalTime" class="modal-time"></div>
+            <button id="modalButton" class="modal-button success" onclick="closeModal()">CONTINUAR</button>
         </div>
     </div>
 
     <script>
-        // Configuración con tolerancia AMPLIA
-        const TOLERANCIA_SEGUNDOS = 10; // Aumentado a 10 segundos
+        // ===== CONFIGURACIÓN =====
+        const TOLERANCIA_SEGUNDOS = 10;
         const IDS_VALIDOS = ['3384', '3395'];
         
         // Elementos
         const video = document.getElementById('camera');
         const btnCapture = document.getElementById('btnCapture');
         const btnTorch = document.getElementById('btnTorch');
-        const resultDiv = document.getElementById('result');
+        const btnStop = document.getElementById('btnStop');
         const permissionDiv = document.getElementById('permissionRequest');
         const scanOverlay = document.getElementById('scanOverlay');
-        const horaDiv = document.getElementById('horaActual');
+        const loading = document.getElementById('loading');
+        const timeBadge = document.getElementById('timeBadge');
+        const modal = document.getElementById('resultModal');
         
         let stream = null;
         let historial = [];
@@ -259,7 +540,7 @@
         // Actualizar hora cada segundo
         setInterval(() => {
             const ahora = new Date();
-            horaDiv.innerHTML = `🕐 Hora actual: ${ahora.toLocaleTimeString()}`;
+            timeBadge.innerHTML = ahora.toLocaleTimeString();
         }, 1000);
 
         // Solicitar cámara
@@ -267,6 +548,7 @@
             try {
                 permissionDiv.style.display = 'none';
                 scanOverlay.style.display = 'flex';
+                loading.style.display = 'block';
                 
                 const constraints = {
                     video: {
@@ -280,6 +562,7 @@
                 await video.play();
                 
                 btnCapture.disabled = false;
+                btnStop.disabled = false;
                 
                 // Verificar linterna
                 const track = stream.getVideoTracks()[0];
@@ -287,19 +570,24 @@
                     btnTorch.disabled = false;
                 }
                 
-                mostrarResultado('📷 Cámara lista', 'info');
+                loading.style.display = 'none';
                 
             } catch (error) {
+                loading.style.display = 'none';
                 permissionDiv.innerHTML = `
-                    <p>❌ Error: ${error.message}</p>
+                    <span style="font-size: 3em;">❌</span>
+                    <p style="margin:20px 0;">Error: ${error.message}</p>
                     <button onclick="requestCamera()">REINTENTAR</button>
                 `;
             }
         }
 
-        // Capturar QR
+        // Capturar QR con feedback visual
         async function captureQR() {
             if (!stream) return;
+            
+            loading.style.display = 'block';
+            scanOverlay.style.opacity = '0.5';
             
             try {
                 const canvas = document.createElement('canvas');
@@ -315,101 +603,128 @@
                 if (code) {
                     console.log('QR Detectado:', code.data);
                     const resultado = validarQR(code.data);
-                    
-                    if (resultado.valido) {
-                        mostrarResultado(`✅ ACCESO CONCEDIDO - ${resultado.ruta}`, 'success');
-                        agregarHistorial(resultado.id, true);
-                        if (navigator.vibrate) navigator.vibrate(100);
-                    } else {
-                        mostrarResultado(`❌ ${resultado.motivo}`, 'error');
-                        agregarHistorial('???', false);
-                        if (navigator.vibrate) navigator.vibrate(200);
-                    }
+                    mostrarModal(resultado);
                 } else {
-                    mostrarResultado('❌ No se detectó QR', 'error');
+                    mostrarModal({
+                        valido: false,
+                        motivo: 'No se detectó ningún QR'
+                    });
                 }
                 
             } catch (error) {
-                mostrarResultado('Error al capturar', 'error');
+                mostrarModal({
+                    valido: false,
+                    motivo: 'Error al procesar'
+                });
             }
+            
+            loading.style.display = 'none';
+            scanOverlay.style.opacity = '1';
         }
 
-        // Validar QR con TOLERANCIA MEJORADA
+        // Validar QR
         function validarQR(texto) {
             try {
-                // Limpiar espacios
                 texto = texto.trim();
-                
-                // Formato esperado: ID|HHMMSS
                 const partes = texto.split('|');
                 
                 if (partes.length !== 2) {
-                    return { valido: false, motivo: `Formato incorrecto: ${texto}` };
+                    return { valido: false, motivo: 'Formato incorrecto' };
                 }
                 
                 const [id, horaCompacta] = partes;
                 
-                // Validar ID
                 if (!IDS_VALIDOS.includes(id)) {
                     return { valido: false, motivo: `ID no válido: ${id}` };
                 }
                 
-                // Validar que horaCompacta tenga 6 dígitos
                 if (!/^\d{6}$/.test(horaCompacta)) {
-                    return { valido: false, motivo: 'Formato de hora incorrecto' };
+                    return { valido: false, motivo: 'Hora inválida' };
                 }
                 
-                // Extraer hora, minuto, segundo del QR
                 const horaQR = horaCompacta.substring(0, 2);
                 const minutoQR = horaCompacta.substring(2, 4);
                 const segundoQR = parseInt(horaCompacta.substring(4, 6));
                 
-                // Obtener hora actual
                 const ahora = new Date();
                 const horaActual = ahora.getHours().toString().padStart(2, '0');
                 const minutoActual = ahora.getMinutes().toString().padStart(2, '0');
                 const segundoActual = ahora.getSeconds();
                 
-                console.log(`QR: ${horaQR}:${minutoQR}:${segundoQR} | Actual: ${horaActual}:${minutoActual}:${segundoActual}`);
-                
-                // VALIDACIÓN MÁS FLEXIBLE:
-                
-                // 1. La hora debe ser la misma (lógico)
+                // Validaciones flexibles
                 if (horaQR !== horaActual) {
-                    return { valido: false, motivo: `Hora incorrecta (QR:${horaQR} Actual:${horaActual})` };
+                    return { valido: false, motivo: 'Hora incorrecta' };
                 }
                 
-                // 2. El minuto puede tener 1 minuto de diferencia (por si el QR se generó justo en el cambio de minuto)
                 const diffMinutos = Math.abs(parseInt(minutoQR) - parseInt(minutoActual));
                 if (diffMinutos > 1) {
-                    return { valido: false, motivo: `Minuto incorrecto (QR:${minutoQR} Actual:${minutoActual})` };
+                    return { valido: false, motivo: 'Minuto incorrecto' };
                 }
                 
-                // 3. Los segundos pueden tener hasta 10 segundos de diferencia
                 let diffSegundos;
                 if (minutoQR === minutoActual) {
-                    // Mismo minuto
                     diffSegundos = Math.abs(segundoActual - segundoQR);
                 } else if (parseInt(minutoQR) < parseInt(minutoActual)) {
-                    // QR de minuto anterior
                     diffSegundos = (60 - segundoQR) + segundoActual;
                 } else {
-                    // QR de minuto siguiente (poco probable)
                     diffSegundos = segundoQR + (60 - segundoActual);
                 }
                 
                 if (diffSegundos > TOLERANCIA_SEGUNDOS) {
-                    return { valido: false, motivo: `QR expirado (${diffSegundos}s > ${TOLERANCIA_SEGUNDOS}s)` };
+                    return { valido: false, motivo: `QR expirado (${diffSegundos}s)` };
                 }
                 
-                // ¡Válido!
-                const nombreRuta = id === '3384' ? 'TÚNEL' : 'VARIANTE PALMAS';
-                return { valido: true, id, ruta: nombreRuta };
+                // Éxito
+                agregarHistorial(id, true);
+                return { 
+                    valido: true, 
+                    id: id,
+                    ruta: id === '3384' ? 'TÚNEL' : 'VARIANTE PALMAS',
+                    hora: ahora.toLocaleTimeString()
+                };
                 
             } catch (error) {
-                console.error(error);
-                return { valido: false, motivo: 'Error al procesar' };
+                return { valido: false, motivo: 'Error de lectura' };
             }
+        }
+
+        // Mostrar MODAL
+        function mostrarModal(resultado) {
+            const modalIcon = document.getElementById('modalIcon');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalId = document.getElementById('modalId');
+            const modalTime = document.getElementById('modalTime');
+            const modalButton = document.getElementById('modalButton');
+            
+            if (resultado.valido) {
+                modalIcon.className = 'modal-icon success';
+                modalIcon.innerHTML = '✅';
+                modalTitle.className = 'modal-title success';
+                modalTitle.innerHTML = '¡ACCESO CONCEDIDO!';
+                modalId.innerHTML = resultado.id;
+                modalTime.innerHTML = `🕐 ${resultado.hora}`;
+                modalButton.className = 'modal-button success';
+                modalButton.innerHTML = 'CONTINUAR';
+                
+                if (navigator.vibrate) navigator.vibrate(100);
+            } else {
+                modalIcon.className = 'modal-icon error';
+                modalIcon.innerHTML = '❌';
+                modalTitle.className = 'modal-title error';
+                modalTitle.innerHTML = 'ACCESO DENEGADO';
+                modalId.innerHTML = resultado.motivo || 'Error';
+                modalTime.innerHTML = `🕐 ${new Date().toLocaleTimeString()}`;
+                modalButton.className = 'modal-button error';
+                modalButton.innerHTML = 'INTENTAR DE NUEVO';
+                
+                if (navigator.vibrate) navigator.vibrate(200);
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
         }
 
         // Linterna
@@ -424,36 +739,42 @@
             }
         }
 
-        function mostrarResultado(mensaje, tipo) {
-            resultDiv.innerHTML = mensaje;
-            resultDiv.className = `result ${tipo}`;
+        // Detener cámara
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(t => t.stop());
+                video.srcObject = null;
+                stream = null;
+            }
+            
+            btnCapture.disabled = true;
+            btnStop.disabled = true;
+            btnTorch.disabled = true;
+            permissionDiv.style.display = 'block';
+            scanOverlay.style.display = 'none';
         }
 
+        // Historial
         function agregarHistorial(id, exitoso) {
             const ahora = new Date();
             historial.unshift({
                 id: id,
-                hora: ahora.toLocaleTimeString(),
+                hora: ahora.toLocaleTimeString().substring(0, 5),
                 exitoso: exitoso
             });
             
-            if (historial.length > 5) historial.pop();
+            if (historial.length > 3) historial.pop();
             
             let html = '';
             historial.forEach(item => {
                 html += `
-                    <div class="history-item">
-                        <div>
-                            <span class="history-id">${item.id}</span>
-                            <span class="history-time">${item.hora}</span>
-                        </div>
-                        <span class="history-status ${item.exitoso ? 'status-success' : 'status-error'}">
-                            ${item.exitoso ? '✅' : '❌'}
-                        </span>
-                    </div>
+                    <span class="history-item ${item.exitoso ? 'success' : 'error'}">
+                        ${item.id} <span class="history-time">${item.hora}</span>
+                    </span>
                 `;
             });
-            document.getElementById('historyList').innerHTML = html;
+            
+            document.getElementById('historyItems').innerHTML = html || 'No hay accesos';
         }
 
         // Iniciar
