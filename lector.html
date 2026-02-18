@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Lector QR - Aeropuerto</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            margin: 0;
+            touch-action: manipulation;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background: #1a1a1a;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+
+        .camera-container {
+            background: #000;
+            padding: 10px;
+            position: relative;
+            min-height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: none;
+        }
+
+        #camera {
+            width: 100%;
+            height: auto;
+            max-height: 450px;
+            object-fit: cover;
+            border-radius: 10px;
+            transform: scaleX(-1); /* Espejo para mejor experiencia */
+        }
+
+        .scan-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .scan-frame {
+            width: 250px;
+            height: 250px;
+            border: 3px solid #00ff00;
+            border-radius: 20px;
+            box-shadow: 0 0 0 999px rgba(0,0,0,0.7);
+            animation: pulse 2s infinite;
+        }
+
+        .scan-line {
+            position: absolute;
+            width: 250px;
+            height: 2px;
+            background: #00ff00;
+            animation: scan 2s linear infinite;
+            opacity: 0.7;
+            filter: drop-shadow(0 0 5px #00ff00);
+        }
+
+        @keyframes scan {
+            0% { top: calc(50% - 125px); }
+            50% { top: calc(50% + 125px); }
+            100% { top: calc(50% - 125px); }
+        }
+
+        @keyframes pulse {
+            0% { border-color: #00ff00; box-shadow: 0 0 0 999px rgba(0,0,0,0.7); }
+            50% { border-color: #ff4444; box-shadow: 0 0 0 999px rgba(0,0,0,0.8); }
+            100% { border-color: #00ff00; box-shadow: 0 0 0 999px rgba(0,0,0,0.7); }
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .button {
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: white;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .button:active {
+            transform: scale(0.95);
+        }
+
+        .button.primary {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+        }
+
+        .button.success {
+            background: linear-gradient(135deg, #28a745, #218838);
+        }
+
+        .button.danger {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            transform: none;
+            pointer-events: none;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 2px solid #17a2b8;
+        }
+
+        .permission-box {
+            background: #333;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            border-radius: 10px;
+            margin: 20px;
+        }
+
+        .permission-box button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.2em;
+            margin-top: 15px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .history {
+            background: white;
+            padding: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .history h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95em;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-time {
+            color: #666;
+            font-size: 0.85em;
+        }
+
+        .history-id {
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .history-status {
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+
+        .status-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-error {
+            background: #dc3545;
+            color: white;
+        }
+
+        .status-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .hint {
+            text-align: center;
+            color: #666;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+
+        .manual-input {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .manual-input input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.2em;
+            text-align: center;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+
+        .manual-input button {
+            width: 100%;
+            padding: 12px;
+            background: #1e3c72;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 LECTOR QR AEROPUERTO</h1>
+            <p>Sistema anti-foto - Tolerancia 3 segundos</p>
+        </div>
+
+        <div class="camera-container" id="cameraContainer">
+            <video id="camera" playsinline autoplay muted></video>
+            <div class="scan-overlay" id="scanOverlay">
+                <div class="scan-frame"></div>
+                <div class="scan-line"></div>
+            </div>
+            <div id="permissionRequest" style="display: none;" class="permission-box">
+                <p>📸 Necesitamos acceso a la cámara para escanear QR</p>
+                <button onclick="requestCameraPermission()">PERMITIR CÁMARA</button>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="button-grid">
+                <button class="button primary" onclick="startCamera()" id="btnStart">📷 INICIAR</button>
+                <button class="button success" onclick="captureQR()" id="btnCapture" disabled>📸 CAPTURAR</button>
+                <button class="button danger" onclick="stopCamera()" id="btnStop" disabled>⏹️ DETENER</button>
+                <button class="button primary" onclick="toggleTorch()" id="btnTorch" disabled>🔦 LINERNA</button>
+            </div>
+            
+            <div id="result" class="result"></div>
+
+            <div class="manual-input">
+                <input type="text" id="manualQR" placeholder="O ingresa código manual" maxlength="20">
+                <button onclick="validateManual()">VALIDAR MANUAL</button>
+            </div>
+        </div>
+
+        <div class="history" id="history">
+            <h3>📋 ÚLTIMOS ACCESOS</h3>
+            <div id="historyList"></div>
+        </div>
+
+        <div class="hint">
+            ⚡ Toca CAPTURAR cuando el QR esté en el recuadro verde
+        </div>
+    </div>
+
+    <!-- Librería QR -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    
+    <script>
+        // ===== CONFIGURACIÓN =====
+        const TOLERANCIA_SEGUNDOS = 3;
+        const IDS_VALIDOS = ['3384', '3395'];
+        
+        // Elementos DOM
+        const video = document.getElementById('camera');
+        const btnStart = document.getElementById('btnStart');
+        const btnCapture = document.getElementById('btnCapture');
+        const btnStop = document.getElementById('btnStop');
+        const btnTorch = document.getElementById('btnTorch');
+        const resultDiv = document.getElementById('result');
+        const historyList = document.getElementById('historyList');
+        const permissionDiv = document.getElementById('permissionRequest');
+        const scanOverlay = document.getElementById('scanOverlay');
+        
+        let stream = null;
+        let torchEnabled = false;
+        let historial = [];
+
+        // ===== SOLICITAR PERMISO CÁMARA (CORREGIDO PARA MÓVILES) =====
+        async function requestCameraPermission() {
+            try {
+                permissionDiv.style.display = 'none';
+                scanOverlay.style.display = 'flex';
+                
+                // Configuración específica para móviles
+                const constraints = {
+                    video: {
+                        facingMode: { ideal: 'environment' }, // Cámara trasera
+                        width: { min: 640, ideal: 1280 },
+                        height: { min: 480, ideal: 720 },
+                        aspectRatio: { ideal: 1.7777777778 }
+                    }
+                };
+                
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = stream;
+                
+        // Esperar que el video esté listo
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        resolve();
+                    };
+                });
+                
+                // Actualizar botones
+                btnStart.disabled = true;
+                btnCapture.disabled = false;
+                btnStop.disabled = false;
+                
+                // Verificar si hay linterna disponible
+                const track = stream.getVideoTracks()[0];
+                if (track.getCapabilities().torch) {
+                    btnTorch.disabled = false;
+                }
+                
+                showResult('📷 Cámara lista - Enfoca el QR', 'info');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                permissionDiv.style.display = 'block';
+                scanOverlay.style.display = 'none';
+                
+                let mensaje = 'No se pudo acceder a la cámara. ';
+                if (error.name === 'NotAllowedError') {
+                    mensaje += 'Permiso denegado. Habilita la cámara en ajustes.';
+                } else if (error.name === 'NotFoundError') {
+                    mensaje += 'No se encontró cámara.';
+                } else {
+                    mensaje += error.message;
+                }
+                
+                showResult('❌ ' + mensaje, 'error');
+            }
+        }
+
+        // ===== INICIAR CÁMARA =====
+        async function startCamera() {
+            permissionDiv.style.display = 'block';
+            scanOverlay.style.display = 'none';
+        }
+
+        // ===== DETENER CÁMARA =====
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                stream = null;
+            }
+            
+            btnStart.disabled = false;
+            btnCapture.disabled = true;
+            btnStop.disabled = true;
+            btnTorch.disabled = true;
+            
+            permissionDiv.style.display = 'block';
+            scanOverlay.style.display = 'none';
+            
+            showResult('⏹️ Cámara detenida', 'info');
+        }
+
+        // ===== CAPTURAR QR =====
+        async function captureQR() {
+            if (!stream) {
+                showResult('Primero inicia la cámara', 'error');
+                return;
+            }
+            
+            try {
+                // Crear canvas temporal
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                const context = canvas.getContext('2d');
+                
+                // Dibujar frame actual
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Obtener datos de imagen
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // Buscar QR
+                const code = jsQR(imageData.data, canvas.width, canvas.height, {
+                    inversionAttempts: "dontInvert"
+                });
+                
+                if (code) {
+                    console.log('QR detectado:', code.data);
+                    const resultado = validarQR(code.data);
+                    procesarResultado(resultado);
+                } else {
+                    showResult('❌ No se detectó QR en el recuadro', 'error');
+                    
+                    // Vibración de error (si soporta)
+                    if (navigator.vibrate) navigator.vibrate(200);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showResult('Error al procesar imagen', 'error');
+            }
+        }
+
+        // ===== VALIDAR QR =====
+        function validarQR(texto) {
+            try {
+                // Formato esperado: ID|HH|MM|SS
+                const partes = texto.split('|');
+                
+                if (partes.length !== 4) {
+                    return { valido: false, motivo: 'Formato incorrecto' };
+                }
+                
+                const [id, hora, minuto, segundo] = partes;
+                
+                // Validar ID
+                if (!IDS_VALIDOS.includes(id)) {
+                    return { valido: false, motivo: 'ID no válido' };
+                }
+                
+                // Obtener hora actual
+                const ahora = new Date();
+                const horaActual = ahora.getHours().toString().padStart(2, '0');
+                const minutoActual = ahora.getMinutes().toString().padStart(2, '0');
+                const segundoActual = ahora.getSeconds();
+                
+                // Validar hora y minuto
+                if (hora !== horaActual || minuto !== minutoActual) {
+                    return { 
+                        valido: false, 
+                        motivo: 'Hora incorrecta - Foto de otro momento' 
+                    };
+                }
+                
+                // Validar segundos (tolerancia)
+                const diff = Math.abs(segundoActual - parseInt(segundo));
+                if (diff > TOLERANCIA_SEGUNDOS) {
+                    return { 
+                        valido: false, 
+                        motivo: `QR expirado (${diff}s de retraso)` 
+                    };
+                }
+                
+                // ¡VÁLIDO!
+                return { 
+                    valido: true, 
+                    id: id,
+                    ruta: id === '3384' ? 'TÚNEL' : 'VARIANTE PALMAS'
+                };
+                
+            } catch (e) {
+                return { valido: false, motivo: 'Error de formato' };
+            }
+        }
+
+        // ===== PROCESAR RESULTADO =====
+        function procesarResultado(resultado) {
+            if (resultado.valido) {
+                showResult(`✅ ACCESO CONCEDIDO - ${resultado.ruta}`, 'success');
+                agregarHistorial(resultado.id, true);
+                
+                // Vibración de éxito
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                
+                // Auto-capturar después de éxito
+                setTimeout(captureQR, 1500);
+            } else {
+                showResult(`❌ ${resultado.motivo}`, 'error');
+                agregarHistorial('???', false, resultado.motivo);
+                
+                // Vibración de error
+                if (navigator.vibrate) navigator.vibrate(200);
+            }
+        }
+
+        // ===== VALIDACIÓN MANUAL =====
+        function validateManual() {
+            const input = document.getElementById('manualQR').value.trim();
+            if (!input) {
+                showResult('Ingresa un código QR', 'error');
+                return;
+            }
+            
+            const resultado = validarQR(input);
+            procesarResultado(resultado);
+        }
+
+        // ===== LINERNA =====
+        async function toggleTorch() {
+            if (!stream) return;
+            
+            try {
+                const track = stream.getVideoTracks()[0];
+                const capabilities = track.getCapabilities();
+                
+                if (capabilities.torch) {
+                    torchEnabled = !torchEnabled;
+                    await track.applyConstraints({
+                        advanced: [{ torch: torchEnabled }]
+                    });
+                    
+                    btnTorch.style.background = torchEnabled ? 
+                        'linear-gradient(135deg, #ffc107, #ffab00)' : 
+                        'linear-gradient(135deg, #1e3c72, #2a5298)';
+                }
+            } catch (error) {
+                console.error('Error linterna:', error);
+            }
+        }
+
+        // ===== AGREGAR HISTORIAL =====
+        function agregarHistorial(id, exitoso, motivo = '') {
+            const ahora = new Date();
+            const hora = ahora.toLocaleTimeString();
+            
+            historial.unshift({
+                id: id,
+                hora: hora,
+                exitoso: exitoso,
+                motivo: motivo
+            });
+            
+            if (historial.length > 5) historial.pop();
+            actualizarHistorial();
+            
+            // Guardar
+            localStorage.setItem('qrHistorial', JSON.stringify(historial));
+        }
+
+        // ===== ACTUALIZAR HISTORIAL =====
+        function actualizarHistorial() {
+            let html = '';
+            
+            historial.forEach(item => {
+                const nombreRuta = item.id === '3384' ? 'TÚNEL' : 
+                                  item.id === '3395' ? 'VARIANTE' : 
+                                  item.id;
+                
+                html += `
+                    <div class="history-item">
+                        <div>
+                            <span class="history-id">${nombreRuta}</span>
+                            <span class="history-time">${item.hora}</span>
+                        </div>
+                        <span class="history-status ${item.exitoso ? 'status-success' : 'status-error'}">
+                            ${item.exitoso ? '✅' : '❌'}
+                        </span>
+                    </div>
+                `;
+            });
+            
+            if (historial.length === 0) {
+                html = '<div style="text-align: center; color: #666;">No hay accesos</div>';
+            }
+            
+            historyList.innerHTML = html;
+        }
+
+        // ===== MOSTRAR RESULTADO =====
+        function showResult(mensaje, tipo) {
+            resultDiv.innerHTML = mensaje;
+            resultDiv.className = `result ${tipo}`;
+        }
+
+        // ===== INICIALIZAR =====
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar soporte
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                permissionDiv.innerHTML = `
+                    <p>❌ Tu navegador no soporta cámara</p>
+                    <small>Usa Safari, Chrome o Edge actualizado</small>
+                `;
+                permissionDiv.style.display = 'block';
+                scanOverlay.style.display = 'none';
+                return;
+            }
+            
+            // Mostrar solicitud de permiso
+            permissionDiv.style.display = 'block';
+            scanOverlay.style.display = 'none';
+            
+            // Cargar historial
+            const guardado = localStorage.getItem('qrHistorial');
+            if (guardado) {
+                historial = JSON.parse(guardado);
+                actualizarHistorial();
+            }
+            
+            // Configurar botón de captura rápida
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && !btnCapture.disabled) {
+                    e.preventDefault();
+                    captureQR();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
