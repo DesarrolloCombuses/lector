@@ -51,22 +51,24 @@
 
         .camera-container {
             background: #000;
-            padding: 10px;
+            padding: 0;
             position: relative;
             min-height: 400px;
             display: flex;
             justify-content: center;
             align-items: center;
             touch-action: none;
+            overflow: hidden;
         }
 
         #camera {
             width: 100%;
             height: auto;
-            max-height: 450px;
+            min-height: 400px;
             object-fit: cover;
-            border-radius: 10px;
-            transform: scaleX(-1); /* Espejo para mejor experiencia */
+            border-radius: 0;
+            /* IMPORTANTE: Quitamos el efecto espejo */
+            transform: scaleX(1); /* Cambiado de -1 a 1 */
         }
 
         .scan-overlay {
@@ -119,7 +121,7 @@
 
         .button-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             margin-bottom: 15px;
         }
@@ -153,6 +155,11 @@
             background: linear-gradient(135deg, #dc3545, #c82333);
         }
 
+        .button.warning {
+            background: linear-gradient(135deg, #ffc107, #ffab00);
+            color: #333;
+        }
+
         .button:disabled {
             opacity: 0.5;
             transform: none;
@@ -166,6 +173,7 @@
             font-weight: bold;
             text-align: center;
             font-size: 1.1em;
+            min-height: 60px;
         }
 
         .success {
@@ -259,16 +267,12 @@
             color: white;
         }
 
-        .status-warning {
-            background: #ffc107;
-            color: #333;
-        }
-
         .hint {
             text-align: center;
             color: #666;
             font-size: 0.85em;
             margin-top: 10px;
+            padding: 10px;
         }
 
         .manual-input {
@@ -299,6 +303,14 @@
             font-size: 1.1em;
             cursor: pointer;
         }
+
+        .debug-info {
+            font-size: 0.8em;
+            color: #666;
+            text-align: center;
+            margin-top: 5px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
@@ -315,7 +327,7 @@
                 <div class="scan-line"></div>
             </div>
             <div id="permissionRequest" style="display: none;" class="permission-box">
-                <p>📸 Necesitamos acceso a la cámara para escanear QR</p>
+                <p>📸 Necesitamos acceso a la cámara trasera</p>
                 <button onclick="requestCameraPermission()">PERMITIR CÁMARA</button>
             </div>
         </div>
@@ -325,15 +337,17 @@
                 <button class="button primary" onclick="startCamera()" id="btnStart">📷 INICIAR</button>
                 <button class="button success" onclick="captureQR()" id="btnCapture" disabled>📸 CAPTURAR</button>
                 <button class="button danger" onclick="stopCamera()" id="btnStop" disabled>⏹️ DETENER</button>
-                <button class="button primary" onclick="toggleTorch()" id="btnTorch" disabled>🔦 LINERNA</button>
+                <button class="button warning" onclick="toggleTorch()" id="btnTorch" disabled>🔦 LINERNA</button>
             </div>
             
             <div id="result" class="result"></div>
 
             <div class="manual-input">
-                <input type="text" id="manualQR" placeholder="O ingresa código manual" maxlength="20">
+                <input type="text" id="manualQR" placeholder="O ingresa código manual (ID|HH|MM|SS)" maxlength="30">
                 <button onclick="validateManual()">VALIDAR MANUAL</button>
             </div>
+            
+            <div class="debug-info" id="debugInfo"></div>
         </div>
 
         <div class="history" id="history">
@@ -342,7 +356,8 @@
         </div>
 
         <div class="hint">
-            ⚡ Toca CAPTURAR cuando el QR esté en el recuadro verde
+            ⚡ Toca CAPTURAR cuando el QR esté en el recuadro verde<br>
+            <span style="font-size: 0.9em;">Ejemplo válido: 3384|14|30|45 (con hora actual)</span>
         </div>
     </div>
 
@@ -364,31 +379,47 @@
         const historyList = document.getElementById('historyList');
         const permissionDiv = document.getElementById('permissionRequest');
         const scanOverlay = document.getElementById('scanOverlay');
+        const debugInfo = document.getElementById('debugInfo');
         
         let stream = null;
         let torchEnabled = false;
         let historial = [];
+        let scanInterval = null;
 
-        // ===== SOLICITAR PERMISO CÁMARA (CORREGIDO PARA MÓVILES) =====
+        // ===== SOLICITAR PERMISO CÁMARA =====
         async function requestCameraPermission() {
             try {
                 permissionDiv.style.display = 'none';
                 scanOverlay.style.display = 'flex';
                 
-                // Configuración específica para móviles
+                // Configuración específica para cámara trasera
                 const constraints = {
                     video: {
-                        facingMode: { ideal: 'environment' }, // Cámara trasera
-                        width: { min: 640, ideal: 1280 },
-                        height: { min: 480, ideal: 720 },
-                        aspectRatio: { ideal: 1.7777777778 }
+                        facingMode: { exact: 'environment' }, // Forzar cámara trasera
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
                     }
                 };
                 
+                debug('Solicitando cámara trasera...');
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                // Si no hay cámara trasera, intentar cualquier cámara
+                if (!stream) {
+                    debug('Cámara trasera no disponible, usando cualquier cámara');
+                    const constraints2 = {
+                        video: {
+                            facingMode: 'environment',
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
+                    };
+                    stream = await navigator.mediaDevices.getUserMedia(constraints2);
+                }
+                
                 video.srcObject = stream;
                 
-        // Esperar que el video esté listo
+                // Esperar que el video esté listo
                 await new Promise((resolve) => {
                     video.onloadedmetadata = () => {
                         video.play();
@@ -401,36 +432,42 @@
                 btnCapture.disabled = false;
                 btnStop.disabled = false;
                 
-                // Verificar si hay linterna disponible
+                // Verificar linterna
                 const track = stream.getVideoTracks()[0];
                 if (track.getCapabilities().torch) {
                     btnTorch.disabled = false;
                 }
                 
                 showResult('📷 Cámara lista - Enfoca el QR', 'info');
+                debug('Cámara OK: ' + track.label);
+                
+                // Iniciar escaneo continuo (opcional)
+                // startContinuousScan();
                 
             } catch (error) {
                 console.error('Error:', error);
                 permissionDiv.style.display = 'block';
                 scanOverlay.style.display = 'none';
                 
-                let mensaje = 'No se pudo acceder a la cámara. ';
+                let mensaje = 'Error: ';
                 if (error.name === 'NotAllowedError') {
-                    mensaje += 'Permiso denegado. Habilita la cámara en ajustes.';
+                    mensaje += 'Permiso denegado. Habilita la cámara.';
                 } else if (error.name === 'NotFoundError') {
-                    mensaje += 'No se encontró cámara.';
+                    mensaje += 'No se encontró cámara trasera.';
                 } else {
                     mensaje += error.message;
                 }
                 
                 showResult('❌ ' + mensaje, 'error');
+                debug(mensaje);
             }
         }
 
         // ===== INICIAR CÁMARA =====
-        async function startCamera() {
+        function startCamera() {
             permissionDiv.style.display = 'block';
             scanOverlay.style.display = 'none';
+            debug('Haz clic en PERMITIR CÁMARA');
         }
 
         // ===== DETENER CÁMARA =====
@@ -439,6 +476,11 @@
                 stream.getTracks().forEach(track => track.stop());
                 video.srcObject = null;
                 stream = null;
+            }
+            
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
             }
             
             btnStart.disabled = false;
@@ -450,9 +492,10 @@
             scanOverlay.style.display = 'none';
             
             showResult('⏹️ Cámara detenida', 'info');
+            debug('');
         }
 
-        // ===== CAPTURAR QR =====
+        // ===== CAPTURAR QR (MANUAL) =====
         async function captureQR() {
             if (!stream) {
                 showResult('Primero inicia la cámara', 'error');
@@ -460,56 +503,74 @@
             }
             
             try {
-                // Crear canvas temporal
                 const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 
                 const context = canvas.getContext('2d');
-                
-                // Dibujar frame actual
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
                 
-                // Obtener datos de imagen
+                // Opcional: voltear la imagen si es necesario
+                // context.translate(canvas.width, 0);
+                // context.scale(-1, 1);
+                // context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
                 const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
                 
-                // Buscar QR
+                debug(`Analizando imagen: ${canvas.width}x${canvas.height}`);
+                
                 const code = jsQR(imageData.data, canvas.width, canvas.height, {
-                    inversionAttempts: "dontInvert"
+                    inversionAttempts: "attemptBoth"
                 });
                 
                 if (code) {
-                    console.log('QR detectado:', code.data);
+                    debug(`QR detectado: ${code.data}`);
                     const resultado = validarQR(code.data);
                     procesarResultado(resultado);
                 } else {
-                    showResult('❌ No se detectó QR en el recuadro', 'error');
+                    showResult('❌ No se detectó QR', 'error');
+                    debug('No se encontró ningún código QR');
                     
-                    // Vibración de error (si soporta)
                     if (navigator.vibrate) navigator.vibrate(200);
                 }
                 
             } catch (error) {
                 console.error('Error:', error);
                 showResult('Error al procesar imagen', 'error');
+                debug('Error: ' + error.message);
             }
+        }
+
+        // ===== ESCANEO CONTINUO (OPCIONAL) =====
+        function startContinuousScan() {
+            if (scanInterval) clearInterval(scanInterval);
+            
+            scanInterval = setInterval(async () => {
+                if (stream && !btnCapture.disabled) {
+                    await captureQR();
+                }
+            }, 2000);
         }
 
         // ===== VALIDAR QR =====
         function validarQR(texto) {
             try {
-                // Formato esperado: ID|HH|MM|SS
+                debug(`Validando: "${texto}"`);
+                
+                // Limpiar espacios
+                texto = texto.trim();
+                
                 const partes = texto.split('|');
                 
                 if (partes.length !== 4) {
-                    return { valido: false, motivo: 'Formato incorrecto' };
+                    return { valido: false, motivo: `Formato incorrecto (${partes.length} partes)` };
                 }
                 
                 const [id, hora, minuto, segundo] = partes;
                 
                 // Validar ID
                 if (!IDS_VALIDOS.includes(id)) {
-                    return { valido: false, motivo: 'ID no válido' };
+                    return { valido: false, motivo: `ID no válido: ${id}` };
                 }
                 
                 // Obtener hora actual
@@ -518,20 +579,25 @@
                 const minutoActual = ahora.getMinutes().toString().padStart(2, '0');
                 const segundoActual = ahora.getSeconds();
                 
+                debug(`QR: ${hora}:${minuto}:${segundo} | Actual: ${horaActual}:${minutoActual}:${segundoActual}`);
+                
                 // Validar hora y minuto
-                if (hora !== horaActual || minuto !== minutoActual) {
-                    return { 
-                        valido: false, 
-                        motivo: 'Hora incorrecta - Foto de otro momento' 
-                    };
+                if (hora !== horaActual) {
+                    return { valido: false, motivo: `Hora incorrecta (QR:${hora} Actual:${horaActual})` };
                 }
                 
-                // Validar segundos (tolerancia)
-                const diff = Math.abs(segundoActual - parseInt(segundo));
+                if (minuto !== minutoActual) {
+                    return { valido: false, motivo: `Minuto incorrecto (QR:${minuto} Actual:${minutoActual})` };
+                }
+                
+                // Validar segundos
+                const segQR = parseInt(segundo);
+                const diff = Math.abs(segundoActual - segQR);
+                
                 if (diff > TOLERANCIA_SEGUNDOS) {
                     return { 
                         valido: false, 
-                        motivo: `QR expirado (${diff}s de retraso)` 
+                        motivo: `QR expirado (${diff}s de diferencia, máx ${TOLERANCIA_SEGUNDOS}s)` 
                     };
                 }
                 
@@ -543,26 +609,21 @@
                 };
                 
             } catch (e) {
-                return { valido: false, motivo: 'Error de formato' };
+                return { valido: false, motivo: 'Error: ' + e.message };
             }
         }
 
         // ===== PROCESAR RESULTADO =====
         function procesarResultado(resultado) {
             if (resultado.valido) {
-                showResult(`✅ ACCESO CONCEDIDO - ${resultado.ruta}`, 'success');
+                showResult(`✅ ACCESO CONCEDIDO - ${resultado.ruta} (ID: ${resultado.id})`, 'success');
                 agregarHistorial(resultado.id, true);
                 
-                // Vibración de éxito
                 if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-                
-                // Auto-capturar después de éxito
-                setTimeout(captureQR, 1500);
             } else {
                 showResult(`❌ ${resultado.motivo}`, 'error');
                 agregarHistorial('???', false, resultado.motivo);
                 
-                // Vibración de error
                 if (navigator.vibrate) navigator.vibrate(200);
             }
         }
@@ -595,10 +656,10 @@
                     
                     btnTorch.style.background = torchEnabled ? 
                         'linear-gradient(135deg, #ffc107, #ffab00)' : 
-                        'linear-gradient(135deg, #1e3c72, #2a5298)';
+                        'linear-gradient(135deg, #ffc107, #ffab00)';
                 }
             } catch (error) {
-                console.error('Error linterna:', error);
+                debug('Error linterna: ' + error.message);
             }
         }
 
@@ -617,7 +678,6 @@
             if (historial.length > 5) historial.pop();
             actualizarHistorial();
             
-            // Guardar
             localStorage.setItem('qrHistorial', JSON.stringify(historial));
         }
 
@@ -656,13 +716,19 @@
             resultDiv.className = `result ${tipo}`;
         }
 
+        // ===== DEBUG =====
+        function debug(mensaje) {
+            console.log(mensaje);
+            debugInfo.innerHTML = mensaje;
+        }
+
         // ===== INICIALIZAR =====
         document.addEventListener('DOMContentLoaded', function() {
             // Verificar soporte
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 permissionDiv.innerHTML = `
                     <p>❌ Tu navegador no soporta cámara</p>
-                    <small>Usa Safari, Chrome o Edge actualizado</small>
+                    <small>Usa Safari, Chrome o Edge</small>
                 `;
                 permissionDiv.style.display = 'block';
                 scanOverlay.style.display = 'none';
@@ -680,7 +746,7 @@
                 actualizarHistorial();
             }
             
-            // Configurar botón de captura rápida
+            // Botón de espacio para capturar
             document.addEventListener('keydown', (e) => {
                 if (e.code === 'Space' && !btnCapture.disabled) {
                     e.preventDefault();
