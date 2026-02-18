@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Lector QR - Aeropuerto</title>
+    <title>LECTOR QR - Aeropuerto</title>
     <style>
         * {
             margin: 0;
@@ -12,15 +12,13 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #000;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 0;
-            margin: 0;
-            touch-action: manipulation;
+            padding: 10px;
         }
 
         .container {
@@ -29,7 +27,6 @@
             background: #1a1a1a;
             border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
         }
 
         .header {
@@ -51,13 +48,11 @@
 
         .camera-container {
             background: #000;
-            padding: 0;
             position: relative;
             min-height: 400px;
             display: flex;
             justify-content: center;
             align-items: center;
-            touch-action: none;
             overflow: hidden;
         }
 
@@ -66,9 +61,6 @@
             height: auto;
             min-height: 400px;
             object-fit: cover;
-            border-radius: 0;
-            /* IMPORTANTE: Quitamos el efecto espejo */
-            transform: scaleX(1); /* Cambiado de -1 a 1 */
         }
 
         .scan-overlay {
@@ -98,8 +90,6 @@
             height: 2px;
             background: #00ff00;
             animation: scan 2s linear infinite;
-            opacity: 0.7;
-            filter: drop-shadow(0 0 5px #00ff00);
         }
 
         @keyframes scan {
@@ -109,9 +99,9 @@
         }
 
         @keyframes pulse {
-            0% { border-color: #00ff00; box-shadow: 0 0 0 999px rgba(0,0,0,0.7); }
-            50% { border-color: #ff4444; box-shadow: 0 0 0 999px rgba(0,0,0,0.8); }
-            100% { border-color: #00ff00; box-shadow: 0 0 0 999px rgba(0,0,0,0.7); }
+            0% { border-color: #00ff00; }
+            50% { border-color: #ff4444; }
+            100% { border-color: #00ff00; }
         }
 
         .controls {
@@ -121,7 +111,7 @@
 
         .button-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
             margin-bottom: 15px;
         }
@@ -133,38 +123,15 @@
             font-size: 1.1em;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.2s;
             color: white;
             touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
         }
 
-        .button:active {
-            transform: scale(0.95);
-        }
-
-        .button.primary {
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-        }
-
-        .button.success {
-            background: linear-gradient(135deg, #28a745, #218838);
-        }
-
-        .button.danger {
-            background: linear-gradient(135deg, #dc3545, #c82333);
-        }
-
-        .button.warning {
-            background: linear-gradient(135deg, #ffc107, #ffab00);
-            color: #333;
-        }
-
-        .button:disabled {
-            opacity: 0.5;
-            transform: none;
-            pointer-events: none;
-        }
+        .button.primary { background: #1e3c72; }
+        .button.success { background: #28a745; }
+        .button.danger { background: #dc3545; }
+        .button.warning { background: #ffc107; color: #333; }
+        .button:disabled { opacity: 0.5; }
 
         .result {
             margin-top: 15px;
@@ -172,32 +139,17 @@
             border-radius: 10px;
             font-weight: bold;
             text-align: center;
-            font-size: 1.1em;
             min-height: 60px;
         }
 
-        .success {
-            background: #d4edda;
-            color: #155724;
-            border: 2px solid #28a745;
-        }
-
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 2px solid #dc3545;
-        }
-
-        .info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 2px solid #17a2b8;
-        }
+        .success { background: #d4edda; color: #155724; border: 2px solid #28a745; }
+        .error { background: #f8d7da; color: #721c24; border: 2px solid #dc3545; }
+        .info { background: #d1ecf1; color: #0c5460; border: 2px solid #17a2b8; }
 
         .permission-box {
             background: #333;
             color: white;
-            padding: 30px 20px;
+            padding: 30px;
             text-align: center;
             border-radius: 10px;
             margin: 20px;
@@ -211,7 +163,6 @@
             border-radius: 50px;
             font-size: 1.2em;
             margin-top: 15px;
-            cursor: pointer;
             width: 100%;
         }
 
@@ -224,7 +175,6 @@
         .history h3 {
             color: #333;
             margin-bottom: 10px;
-            font-size: 1.1em;
         }
 
         .history-item {
@@ -232,79 +182,15 @@
             border-bottom: 1px solid #eee;
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            font-size: 0.95em;
         }
 
-        .history-item:last-child {
-            border-bottom: none;
-        }
+        .history-id { font-weight: bold; color: #1e3c72; }
+        .history-time { color: #666; font-size: 0.85em; }
+        .history-status { padding: 2px 10px; border-radius: 15px; font-size: 0.8em; }
+        .status-success { background: #28a745; color: white; }
+        .status-error { background: #dc3545; color: white; }
 
-        .history-time {
-            color: #666;
-            font-size: 0.85em;
-        }
-
-        .history-id {
-            font-weight: bold;
-            color: #1e3c72;
-        }
-
-        .history-status {
-            padding: 3px 10px;
-            border-radius: 15px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-
-        .status-success {
-            background: #28a745;
-            color: white;
-        }
-
-        .status-error {
-            background: #dc3545;
-            color: white;
-        }
-
-        .hint {
-            text-align: center;
-            color: #666;
-            font-size: 0.85em;
-            margin-top: 10px;
-            padding: 10px;
-        }
-
-        .manual-input {
-            margin-top: 15px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-
-        .manual-input input {
-            width: 100%;
-            padding: 12px;
-            font-size: 1.2em;
-            text-align: center;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-family: monospace;
-        }
-
-        .manual-input button {
-            width: 100%;
-            padding: 12px;
-            background: #1e3c72;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1em;
-            cursor: pointer;
-        }
-
-        .debug-info {
+        .debug {
             font-size: 0.8em;
             color: #666;
             text-align: center;
@@ -312,123 +198,82 @@
             font-family: monospace;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>📱 LECTOR QR AEROPUERTO</h1>
-            <p>Sistema anti-foto - Tolerancia 3 segundos</p>
+            <p>Anti-foto - Tolerancia 3 segundos</p>
         </div>
 
-        <div class="camera-container" id="cameraContainer">
+        <div class="camera-container">
             <video id="camera" playsinline autoplay muted></video>
             <div class="scan-overlay" id="scanOverlay">
                 <div class="scan-frame"></div>
                 <div class="scan-line"></div>
             </div>
-            <div id="permissionRequest" style="display: none;" class="permission-box">
-                <p>📸 Necesitamos acceso a la cámara trasera</p>
-                <button onclick="requestCameraPermission()">PERMITIR CÁMARA</button>
+            <div id="permissionRequest" class="permission-box">
+                <p>📸 Necesitamos acceso a la cámara</p>
+                <button onclick="requestCamera()">PERMITIR CÁMARA</button>
             </div>
         </div>
 
         <div class="controls">
             <div class="button-grid">
-                <button class="button primary" onclick="startCamera()" id="btnStart">📷 INICIAR</button>
+                <button class="button primary" onclick="startCamera()" id="btnStart" style="display:none;">📷 INICIAR</button>
                 <button class="button success" onclick="captureQR()" id="btnCapture" disabled>📸 CAPTURAR</button>
                 <button class="button danger" onclick="stopCamera()" id="btnStop" disabled>⏹️ DETENER</button>
                 <button class="button warning" onclick="toggleTorch()" id="btnTorch" disabled>🔦 LINERNA</button>
             </div>
             
             <div id="result" class="result"></div>
-
-            <div class="manual-input">
-                <input type="text" id="manualQR" placeholder="O ingresa código manual (ID|HH|MM|SS)" maxlength="30">
-                <button onclick="validateManual()">VALIDAR MANUAL</button>
-            </div>
-            
-            <div class="debug-info" id="debugInfo"></div>
+            <div class="debug" id="debug"></div>
         </div>
 
         <div class="history" id="history">
             <h3>📋 ÚLTIMOS ACCESOS</h3>
             <div id="historyList"></div>
         </div>
-
-        <div class="hint">
-            ⚡ Toca CAPTURAR cuando el QR esté en el recuadro verde<br>
-            <span style="font-size: 0.9em;">Ejemplo válido: 3384|14|30|45 (con hora actual)</span>
-        </div>
     </div>
 
-    <!-- Librería QR -->
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    
     <script>
-        // ===== CONFIGURACIÓN =====
-        const TOLERANCIA_SEGUNDOS = 3;
+        // Configuración
+        const TOLERANCIA = 3; // segundos
         const IDS_VALIDOS = ['3384', '3395'];
         
-        // Elementos DOM
+        // Elementos
         const video = document.getElementById('camera');
-        const btnStart = document.getElementById('btnStart');
         const btnCapture = document.getElementById('btnCapture');
         const btnStop = document.getElementById('btnStop');
         const btnTorch = document.getElementById('btnTorch');
         const resultDiv = document.getElementById('result');
-        const historyList = document.getElementById('historyList');
         const permissionDiv = document.getElementById('permissionRequest');
         const scanOverlay = document.getElementById('scanOverlay');
-        const debugInfo = document.getElementById('debugInfo');
+        const debugDiv = document.getElementById('debug');
         
         let stream = null;
-        let torchEnabled = false;
         let historial = [];
-        let scanInterval = null;
 
-        // ===== SOLICITAR PERMISO CÁMARA =====
-        async function requestCameraPermission() {
+        // Solicitar cámara
+        async function requestCamera() {
             try {
                 permissionDiv.style.display = 'none';
                 scanOverlay.style.display = 'flex';
                 
-                // Configuración específica para cámara trasera
                 const constraints = {
                     video: {
-                        facingMode: { exact: 'environment' }, // Forzar cámara trasera
+                        facingMode: { exact: 'environment' }, // Cámara trasera
                         width: { ideal: 1920 },
                         height: { ideal: 1080 }
                     }
                 };
                 
-                debug('Solicitando cámara trasera...');
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
-                
-                // Si no hay cámara trasera, intentar cualquier cámara
-                if (!stream) {
-                    debug('Cámara trasera no disponible, usando cualquier cámara');
-                    const constraints2 = {
-                        video: {
-                            facingMode: 'environment',
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 }
-                        }
-                    };
-                    stream = await navigator.mediaDevices.getUserMedia(constraints2);
-                }
-                
                 video.srcObject = stream;
                 
-                // Esperar que el video esté listo
-                await new Promise((resolve) => {
-                    video.onloadedmetadata = () => {
-                        video.play();
-                        resolve();
-                    };
-                });
+                await video.play();
                 
-                // Actualizar botones
-                btnStart.disabled = true;
                 btnCapture.disabled = false;
                 btnStop.disabled = false;
                 
@@ -438,69 +283,20 @@
                     btnTorch.disabled = false;
                 }
                 
-                showResult('📷 Cámara lista - Enfoca el QR', 'info');
-                debug('Cámara OK: ' + track.label);
-                
-                // Iniciar escaneo continuo (opcional)
-                // startContinuousScan();
+                mostrarResultado('📷 Cámara lista - Enfoca el QR', 'info');
                 
             } catch (error) {
-                console.error('Error:', error);
-                permissionDiv.style.display = 'block';
-                scanOverlay.style.display = 'none';
-                
-                let mensaje = 'Error: ';
-                if (error.name === 'NotAllowedError') {
-                    mensaje += 'Permiso denegado. Habilita la cámara.';
-                } else if (error.name === 'NotFoundError') {
-                    mensaje += 'No se encontró cámara trasera.';
-                } else {
-                    mensaje += error.message;
-                }
-                
-                showResult('❌ ' + mensaje, 'error');
-                debug(mensaje);
+                console.error(error);
+                permissionDiv.innerHTML = `
+                    <p>❌ Error: ${error.message}</p>
+                    <button onclick="requestCamera()">REINTENTAR</button>
+                `;
             }
         }
 
-        // ===== INICIAR CÁMARA =====
-        function startCamera() {
-            permissionDiv.style.display = 'block';
-            scanOverlay.style.display = 'none';
-            debug('Haz clic en PERMITIR CÁMARA');
-        }
-
-        // ===== DETENER CÁMARA =====
-        function stopCamera() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                video.srcObject = null;
-                stream = null;
-            }
-            
-            if (scanInterval) {
-                clearInterval(scanInterval);
-                scanInterval = null;
-            }
-            
-            btnStart.disabled = false;
-            btnCapture.disabled = true;
-            btnStop.disabled = true;
-            btnTorch.disabled = true;
-            
-            permissionDiv.style.display = 'block';
-            scanOverlay.style.display = 'none';
-            
-            showResult('⏹️ Cámara detenida', 'info');
-            debug('');
-        }
-
-        // ===== CAPTURAR QR (MANUAL) =====
+        // Capturar QR
         async function captureQR() {
-            if (!stream) {
-                showResult('Primero inicia la cámara', 'error');
-                return;
-            }
+            if (!stream) return;
             
             try {
                 const canvas = document.createElement('canvas');
@@ -510,190 +306,141 @@
                 const context = canvas.getContext('2d');
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
                 
-                // Opcional: voltear la imagen si es necesario
-                // context.translate(canvas.width, 0);
-                // context.scale(-1, 1);
-                // context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
                 const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
                 
-                debug(`Analizando imagen: ${canvas.width}x${canvas.height}`);
-                
-                const code = jsQR(imageData.data, canvas.width, canvas.height, {
-                    inversionAttempts: "attemptBoth"
-                });
+                const code = jsQR(imageData.data, canvas.width, canvas.height);
                 
                 if (code) {
-                    debug(`QR detectado: ${code.data}`);
+                    debug('QR detectado: ' + code.data);
                     const resultado = validarQR(code.data);
-                    procesarResultado(resultado);
-                } else {
-                    showResult('❌ No se detectó QR', 'error');
-                    debug('No se encontró ningún código QR');
                     
-                    if (navigator.vibrate) navigator.vibrate(200);
+                    if (resultado.valido) {
+                        mostrarResultado(`✅ ACCESO CONCEDIDO - ${resultado.ruta}`, 'success');
+                        agregarHistorial(resultado.id, true);
+                        if (navigator.vibrate) navigator.vibrate(100);
+                    } else {
+                        mostrarResultado(`❌ ${resultado.motivo}`, 'error');
+                        agregarHistorial('???', false);
+                        if (navigator.vibrate) navigator.vibrate(200);
+                    }
+                } else {
+                    mostrarResultado('❌ No se detectó QR', 'error');
                 }
                 
             } catch (error) {
-                console.error('Error:', error);
-                showResult('Error al procesar imagen', 'error');
                 debug('Error: ' + error.message);
             }
         }
 
-        // ===== ESCANEO CONTINUO (OPCIONAL) =====
-        function startContinuousScan() {
-            if (scanInterval) clearInterval(scanInterval);
-            
-            scanInterval = setInterval(async () => {
-                if (stream && !btnCapture.disabled) {
-                    await captureQR();
-                }
-            }, 2000);
-        }
-
-        // ===== VALIDAR QR =====
+        // Validar QR (formato: ID|HH|MM|SS)
         function validarQR(texto) {
             try {
-                debug(`Validando: "${texto}"`);
-                
-                // Limpiar espacios
-                texto = texto.trim();
-                
                 const partes = texto.split('|');
                 
                 if (partes.length !== 4) {
-                    return { valido: false, motivo: `Formato incorrecto (${partes.length} partes)` };
+                    return { valido: false, motivo: 'Formato incorrecto' };
                 }
                 
                 const [id, hora, minuto, segundo] = partes;
                 
                 // Validar ID
                 if (!IDS_VALIDOS.includes(id)) {
-                    return { valido: false, motivo: `ID no válido: ${id}` };
+                    return { valido: false, motivo: 'ID no válido' };
                 }
                 
                 // Obtener hora actual
                 const ahora = new Date();
                 const horaActual = ahora.getHours().toString().padStart(2, '0');
-                const minutoActual = ahora.getMinutes().toString().padStart(2, '0');
-                const segundoActual = ahora.getSeconds();
+                const minActual = ahora.getMinutes().toString().padStart(2, '0');
+                const segActual = ahora.getSeconds();
                 
-                debug(`QR: ${hora}:${minuto}:${segundo} | Actual: ${horaActual}:${minutoActual}:${segundoActual}`);
+                debug(`QR: ${hora}:${minuto}:${segundo} | Actual: ${horaActual}:${minActual}:${segActual}`);
                 
                 // Validar hora y minuto
-                if (hora !== horaActual) {
-                    return { valido: false, motivo: `Hora incorrecta (QR:${hora} Actual:${horaActual})` };
-                }
-                
-                if (minuto !== minutoActual) {
-                    return { valido: false, motivo: `Minuto incorrecto (QR:${minuto} Actual:${minutoActual})` };
+                if (hora !== horaActual || minuto !== minActual) {
+                    return { valido: false, motivo: 'Hora incorrecta' };
                 }
                 
                 // Validar segundos
-                const segQR = parseInt(segundo);
-                const diff = Math.abs(segundoActual - segQR);
-                
-                if (diff > TOLERANCIA_SEGUNDOS) {
-                    return { 
-                        valido: false, 
-                        motivo: `QR expirado (${diff}s de diferencia, máx ${TOLERANCIA_SEGUNDOS}s)` 
-                    };
+                const diff = Math.abs(segActual - parseInt(segundo));
+                if (diff > TOLERANCIA) {
+                    return { valido: false, motivo: `QR expirado (${diff}s)` };
                 }
                 
-                // ¡VÁLIDO!
+                // ¡Válido!
                 return { 
                     valido: true, 
                     id: id,
-                    ruta: id === '3384' ? 'TÚNEL' : 'VARIANTE PALMAS'
+                    ruta: id === '3384' ? 'TÚNEL' : 'VARIANTE'
                 };
                 
             } catch (e) {
-                return { valido: false, motivo: 'Error: ' + e.message };
+                return { valido: false, motivo: 'Error de formato' };
             }
         }
 
-        // ===== PROCESAR RESULTADO =====
-        function procesarResultado(resultado) {
-            if (resultado.valido) {
-                showResult(`✅ ACCESO CONCEDIDO - ${resultado.ruta} (ID: ${resultado.id})`, 'success');
-                agregarHistorial(resultado.id, true);
-                
-                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            } else {
-                showResult(`❌ ${resultado.motivo}`, 'error');
-                agregarHistorial('???', false, resultado.motivo);
-                
-                if (navigator.vibrate) navigator.vibrate(200);
-            }
-        }
-
-        // ===== VALIDACIÓN MANUAL =====
-        function validateManual() {
-            const input = document.getElementById('manualQR').value.trim();
-            if (!input) {
-                showResult('Ingresa un código QR', 'error');
-                return;
+        // Detener cámara
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(t => t.stop());
+                video.srcObject = null;
+                stream = null;
             }
             
-            const resultado = validarQR(input);
-            procesarResultado(resultado);
+            btnCapture.disabled = true;
+            btnStop.disabled = true;
+            btnTorch.disabled = true;
+            permissionDiv.style.display = 'block';
+            scanOverlay.style.display = 'none';
         }
 
-        // ===== LINERNA =====
+        // Linterna
         async function toggleTorch() {
             if (!stream) return;
             
-            try {
-                const track = stream.getVideoTracks()[0];
-                const capabilities = track.getCapabilities();
-                
-                if (capabilities.torch) {
-                    torchEnabled = !torchEnabled;
-                    await track.applyConstraints({
-                        advanced: [{ torch: torchEnabled }]
-                    });
-                    
-                    btnTorch.style.background = torchEnabled ? 
-                        'linear-gradient(135deg, #ffc107, #ffab00)' : 
-                        'linear-gradient(135deg, #ffc107, #ffab00)';
-                }
-            } catch (error) {
-                debug('Error linterna: ' + error.message);
+            const track = stream.getVideoTracks()[0];
+            const capabilities = track.getCapabilities();
+            
+            if (capabilities.torch) {
+                const enabled = track.getSettings().torch;
+                await track.applyConstraints({
+                    advanced: [{ torch: !enabled }]
+                });
             }
         }
 
-        // ===== AGREGAR HISTORIAL =====
-        function agregarHistorial(id, exitoso, motivo = '') {
+        // Mostrar resultado
+        function mostrarResultado(mensaje, tipo) {
+            resultDiv.innerHTML = mensaje;
+            resultDiv.className = `result ${tipo}`;
+        }
+
+        // Debug
+        function debug(mensaje) {
+            debugDiv.innerHTML = mensaje;
+            console.log(mensaje);
+        }
+
+        // Historial
+        function agregarHistorial(id, exitoso) {
             const ahora = new Date();
-            const hora = ahora.toLocaleTimeString();
-            
             historial.unshift({
                 id: id,
-                hora: hora,
-                exitoso: exitoso,
-                motivo: motivo
+                hora: ahora.toLocaleTimeString(),
+                exitoso: exitoso
             });
             
             if (historial.length > 5) historial.pop();
             actualizarHistorial();
-            
-            localStorage.setItem('qrHistorial', JSON.stringify(historial));
         }
 
-        // ===== ACTUALIZAR HISTORIAL =====
         function actualizarHistorial() {
             let html = '';
-            
             historial.forEach(item => {
-                const nombreRuta = item.id === '3384' ? 'TÚNEL' : 
-                                  item.id === '3395' ? 'VARIANTE' : 
-                                  item.id;
-                
                 html += `
                     <div class="history-item">
                         <div>
-                            <span class="history-id">${nombreRuta}</span>
+                            <span class="history-id">${item.id}</span>
                             <span class="history-time">${item.hora}</span>
                         </div>
                         <span class="history-status ${item.exitoso ? 'status-success' : 'status-error'}">
@@ -702,58 +449,12 @@
                     </div>
                 `;
             });
-            
-            if (historial.length === 0) {
-                html = '<div style="text-align: center; color: #666;">No hay accesos</div>';
-            }
-            
-            historyList.innerHTML = html;
+            document.getElementById('historyList').innerHTML = html;
         }
 
-        // ===== MOSTRAR RESULTADO =====
-        function showResult(mensaje, tipo) {
-            resultDiv.innerHTML = mensaje;
-            resultDiv.className = `result ${tipo}`;
-        }
-
-        // ===== DEBUG =====
-        function debug(mensaje) {
-            console.log(mensaje);
-            debugInfo.innerHTML = mensaje;
-        }
-
-        // ===== INICIALIZAR =====
-        document.addEventListener('DOMContentLoaded', function() {
-            // Verificar soporte
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                permissionDiv.innerHTML = `
-                    <p>❌ Tu navegador no soporta cámara</p>
-                    <small>Usa Safari, Chrome o Edge</small>
-                `;
-                permissionDiv.style.display = 'block';
-                scanOverlay.style.display = 'none';
-                return;
-            }
-            
-            // Mostrar solicitud de permiso
-            permissionDiv.style.display = 'block';
-            scanOverlay.style.display = 'none';
-            
-            // Cargar historial
-            const guardado = localStorage.getItem('qrHistorial');
-            if (guardado) {
-                historial = JSON.parse(guardado);
-                actualizarHistorial();
-            }
-            
-            // Botón de espacio para capturar
-            document.addEventListener('keydown', (e) => {
-                if (e.code === 'Space' && !btnCapture.disabled) {
-                    e.preventDefault();
-                    captureQR();
-                }
-            });
-        });
+        // Iniciar
+        startCamera(); // Muestra el botón de permiso
     </script>
 </body>
 </html>
+
