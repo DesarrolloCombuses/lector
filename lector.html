@@ -124,7 +124,6 @@
             font-weight: bold;
             cursor: pointer;
             color: white;
-            touch-action: manipulation;
         }
 
         .button.primary { background: #1e3c72; }
@@ -190,11 +189,13 @@
         .status-success { background: #28a745; color: white; }
         .status-error { background: #dc3545; color: white; }
 
-        .debug {
-            font-size: 0.8em;
-            color: #666;
+        .hora-actual {
             text-align: center;
-            margin-top: 5px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-size: 1.2em;
             font-family: monospace;
         }
     </style>
@@ -204,7 +205,7 @@
     <div class="container">
         <div class="header">
             <h1>📱 LECTOR QR AEROPUERTO</h1>
-            <p>Anti-foto - Tolerancia 3 segundos</p>
+            <p>Tolerancia: 10 segundos - Anti-foto</p>
         </div>
 
         <div class="camera-container">
@@ -220,15 +221,16 @@
         </div>
 
         <div class="controls">
+            <div class="hora-actual" id="horaActual">
+                🕐 Cargando hora...
+            </div>
+            
             <div class="button-grid">
-                <button class="button primary" onclick="startCamera()" id="btnStart" style="display:none;">📷 INICIAR</button>
                 <button class="button success" onclick="captureQR()" id="btnCapture" disabled>📸 CAPTURAR</button>
-                <button class="button danger" onclick="stopCamera()" id="btnStop" disabled>⏹️ DETENER</button>
                 <button class="button warning" onclick="toggleTorch()" id="btnTorch" disabled>🔦 LINERNA</button>
             </div>
             
             <div id="result" class="result"></div>
-            <div class="debug" id="debug"></div>
         </div>
 
         <div class="history" id="history">
@@ -238,22 +240,27 @@
     </div>
 
     <script>
-        // Configuración
-        const TOLERANCIA = 3; // segundos
+        // Configuración con tolerancia AMPLIA
+        const TOLERANCIA_SEGUNDOS = 10; // Aumentado a 10 segundos
         const IDS_VALIDOS = ['3384', '3395'];
         
         // Elementos
         const video = document.getElementById('camera');
         const btnCapture = document.getElementById('btnCapture');
-        const btnStop = document.getElementById('btnStop');
         const btnTorch = document.getElementById('btnTorch');
         const resultDiv = document.getElementById('result');
         const permissionDiv = document.getElementById('permissionRequest');
         const scanOverlay = document.getElementById('scanOverlay');
-        const debugDiv = document.getElementById('debug');
+        const horaDiv = document.getElementById('horaActual');
         
         let stream = null;
         let historial = [];
+
+        // Actualizar hora cada segundo
+        setInterval(() => {
+            const ahora = new Date();
+            horaDiv.innerHTML = `🕐 Hora actual: ${ahora.toLocaleTimeString()}`;
+        }, 1000);
 
         // Solicitar cámara
         async function requestCamera() {
@@ -263,19 +270,16 @@
                 
                 const constraints = {
                     video: {
-                        facingMode: { exact: 'environment' }, // Cámara trasera
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
+                        facingMode: { exact: 'environment' },
+                        width: { ideal: 1920 }
                     }
                 };
                 
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
-                
                 await video.play();
                 
                 btnCapture.disabled = false;
-                btnStop.disabled = false;
                 
                 // Verificar linterna
                 const track = stream.getVideoTracks()[0];
@@ -283,10 +287,9 @@
                     btnTorch.disabled = false;
                 }
                 
-                mostrarResultado('📷 Cámara lista - Enfoca el QR', 'info');
+                mostrarResultado('📷 Cámara lista', 'info');
                 
             } catch (error) {
-                console.error(error);
                 permissionDiv.innerHTML = `
                     <p>❌ Error: ${error.message}</p>
                     <button onclick="requestCamera()">REINTENTAR</button>
@@ -307,11 +310,10 @@
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
                 
                 const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                
                 const code = jsQR(imageData.data, canvas.width, canvas.height);
                 
                 if (code) {
-                    debug('QR detectado: ' + code.data);
+                    console.log('QR Detectado:', code.data);
                     const resultado = validarQR(code.data);
                     
                     if (resultado.valido) {
@@ -328,80 +330,93 @@
                 }
                 
             } catch (error) {
-                debug('Error: ' + error.message);
+                mostrarResultado('Error al capturar', 'error');
             }
         }
 
-        // Validar QR (formato: ID|HH|MM|SS)
+        // Validar QR con TOLERANCIA MEJORADA
         function validarQR(texto) {
             try {
+                // Limpiar espacios
+                texto = texto.trim();
+                
+                // Formato esperado: ID|HHMMSS
                 const partes = texto.split('|');
                 
-                if (partes.length !== 4) {
-                    return { valido: false, motivo: 'Formato incorrecto' };
+                if (partes.length !== 2) {
+                    return { valido: false, motivo: `Formato incorrecto: ${texto}` };
                 }
                 
-                const [id, hora, minuto, segundo] = partes;
+                const [id, horaCompacta] = partes;
                 
                 // Validar ID
                 if (!IDS_VALIDOS.includes(id)) {
-                    return { valido: false, motivo: 'ID no válido' };
+                    return { valido: false, motivo: `ID no válido: ${id}` };
                 }
+                
+                // Validar que horaCompacta tenga 6 dígitos
+                if (!/^\d{6}$/.test(horaCompacta)) {
+                    return { valido: false, motivo: 'Formato de hora incorrecto' };
+                }
+                
+                // Extraer hora, minuto, segundo del QR
+                const horaQR = horaCompacta.substring(0, 2);
+                const minutoQR = horaCompacta.substring(2, 4);
+                const segundoQR = parseInt(horaCompacta.substring(4, 6));
                 
                 // Obtener hora actual
                 const ahora = new Date();
                 const horaActual = ahora.getHours().toString().padStart(2, '0');
-                const minActual = ahora.getMinutes().toString().padStart(2, '0');
-                const segActual = ahora.getSeconds();
+                const minutoActual = ahora.getMinutes().toString().padStart(2, '0');
+                const segundoActual = ahora.getSeconds();
                 
-                debug(`QR: ${hora}:${minuto}:${segundo} | Actual: ${horaActual}:${minActual}:${segActual}`);
+                console.log(`QR: ${horaQR}:${minutoQR}:${segundoQR} | Actual: ${horaActual}:${minutoActual}:${segundoActual}`);
                 
-                // Validar hora y minuto
-                if (hora !== horaActual || minuto !== minActual) {
-                    return { valido: false, motivo: 'Hora incorrecta' };
+                // VALIDACIÓN MÁS FLEXIBLE:
+                
+                // 1. La hora debe ser la misma (lógico)
+                if (horaQR !== horaActual) {
+                    return { valido: false, motivo: `Hora incorrecta (QR:${horaQR} Actual:${horaActual})` };
                 }
                 
-                // Validar segundos
-                const diff = Math.abs(segActual - parseInt(segundo));
-                if (diff > TOLERANCIA) {
-                    return { valido: false, motivo: `QR expirado (${diff}s)` };
+                // 2. El minuto puede tener 1 minuto de diferencia (por si el QR se generó justo en el cambio de minuto)
+                const diffMinutos = Math.abs(parseInt(minutoQR) - parseInt(minutoActual));
+                if (diffMinutos > 1) {
+                    return { valido: false, motivo: `Minuto incorrecto (QR:${minutoQR} Actual:${minutoActual})` };
+                }
+                
+                // 3. Los segundos pueden tener hasta 10 segundos de diferencia
+                let diffSegundos;
+                if (minutoQR === minutoActual) {
+                    // Mismo minuto
+                    diffSegundos = Math.abs(segundoActual - segundoQR);
+                } else if (parseInt(minutoQR) < parseInt(minutoActual)) {
+                    // QR de minuto anterior
+                    diffSegundos = (60 - segundoQR) + segundoActual;
+                } else {
+                    // QR de minuto siguiente (poco probable)
+                    diffSegundos = segundoQR + (60 - segundoActual);
+                }
+                
+                if (diffSegundos > TOLERANCIA_SEGUNDOS) {
+                    return { valido: false, motivo: `QR expirado (${diffSegundos}s > ${TOLERANCIA_SEGUNDOS}s)` };
                 }
                 
                 // ¡Válido!
-                return { 
-                    valido: true, 
-                    id: id,
-                    ruta: id === '3384' ? 'TÚNEL' : 'VARIANTE'
-                };
+                const nombreRuta = id === '3384' ? 'TÚNEL' : 'VARIANTE PALMAS';
+                return { valido: true, id, ruta: nombreRuta };
                 
-            } catch (e) {
-                return { valido: false, motivo: 'Error de formato' };
+            } catch (error) {
+                console.error(error);
+                return { valido: false, motivo: 'Error al procesar' };
             }
-        }
-
-        // Detener cámara
-        function stopCamera() {
-            if (stream) {
-                stream.getTracks().forEach(t => t.stop());
-                video.srcObject = null;
-                stream = null;
-            }
-            
-            btnCapture.disabled = true;
-            btnStop.disabled = true;
-            btnTorch.disabled = true;
-            permissionDiv.style.display = 'block';
-            scanOverlay.style.display = 'none';
         }
 
         // Linterna
         async function toggleTorch() {
             if (!stream) return;
-            
             const track = stream.getVideoTracks()[0];
-            const capabilities = track.getCapabilities();
-            
-            if (capabilities.torch) {
+            if (track.getCapabilities().torch) {
                 const enabled = track.getSettings().torch;
                 await track.applyConstraints({
                     advanced: [{ torch: !enabled }]
@@ -409,19 +424,11 @@
             }
         }
 
-        // Mostrar resultado
         function mostrarResultado(mensaje, tipo) {
             resultDiv.innerHTML = mensaje;
             resultDiv.className = `result ${tipo}`;
         }
 
-        // Debug
-        function debug(mensaje) {
-            debugDiv.innerHTML = mensaje;
-            console.log(mensaje);
-        }
-
-        // Historial
         function agregarHistorial(id, exitoso) {
             const ahora = new Date();
             historial.unshift({
@@ -431,10 +438,7 @@
             });
             
             if (historial.length > 5) historial.pop();
-            actualizarHistorial();
-        }
-
-        function actualizarHistorial() {
+            
             let html = '';
             historial.forEach(item => {
                 html += `
@@ -453,7 +457,7 @@
         }
 
         // Iniciar
-        startCamera(); // Muestra el botón de permiso
+        requestCamera();
     </script>
 </body>
 </html>
